@@ -3,6 +3,7 @@
 
 #include "precompiled.hpp"
 #include "fwd.hpp"
+#include "pp_util.hpp"
 #include "singletons/main_config.hpp"
 #include "singletons/dns_daemon.hpp"
 #include "singletons/timer_daemon.hpp"
@@ -53,9 +54,9 @@ namespace {
 	}
 
 	void sigint_proc(int){
-		static const boost::uint64_t s_kill_timeout = 5000;
-		static const boost::uint64_t s_reset_timeout = 10000;
-		static boost::uint64_t s_kill_timer = 0;
+		static const std::uint64_t s_kill_timeout = 5000;
+		static const std::uint64_t s_reset_timeout = 10000;
+		static std::uint64_t s_kill_timer = 0;
 
 		// 系统启动的时候这个时间是从 0 开始的，如果这时候按下 Ctrl+C 就会立即终止。
 		// 因此将计时器的起点设为该区间以外。
@@ -175,8 +176,8 @@ namespace {
 			for(AUTO(it, snapshot.begin()); it != snapshot.end(); ++it){
 				const AUTO_REF(elem, *it);
 				Json_object obj;
-				obj.set(Rcnts::view("remote_info"), std::string(str, (unsigned)::snprintf(str, sizeof(str), "%s:%u", elem.remote_info.ip(), elem.remote_info.port())));
-				obj.set(Rcnts::view("local_info"), std::string(str, (unsigned)::snprintf(str, sizeof(str), "%s:%u", elem.local_info.ip(), elem.local_info.port())));
+				obj.set(Rcnts::view("remote_info"), std::string(str, (unsigned)std::snprintf(str, sizeof(str), "%s:%u", elem.remote_info.ip(), elem.remote_info.port())));
+				obj.set(Rcnts::view("local_info"), std::string(str, (unsigned)std::snprintf(str, sizeof(str), "%s:%u", elem.local_info.ip(), elem.local_info.port())));
 				obj.set(Rcnts::view("creation_time"), std::string(str, format_time(str, sizeof(str), elem.creation_time, false)));
 				obj.set(Rcnts::view("listening"), elem.listening);
 				obj.set(Rcnts::view("readable"), elem.readable);
@@ -270,7 +271,7 @@ namespace {
 				try {
 					const AUTO_REF(str, req.get("address_to_unload").get<std::string>());
 					char *eptr;
-					const AUTO(val, ::strtoull(str.c_str(), &eptr, 0));
+					const AUTO(val, std::strtoull(str.c_str(), &eptr, 0));
 					if(*eptr != 0){
 						throw std::bad_cast(); // XXX
 					}
@@ -327,8 +328,8 @@ namespace {
 			for(AUTO(it, snapshot.begin()); it != snapshot.end(); ++it){
 				const AUTO_REF(elem, *it);
 				Json_object obj;
-				obj.set(Rcnts::view("dl_handle"), std::string(str, (unsigned)::snprintf(str, sizeof(str), "0x%llx", (unsigned long long)elem.dl_handle)));
-				obj.set(Rcnts::view("base_address"), std::string(str, (unsigned)::snprintf(str, sizeof(str), "0x%llx", (unsigned long long)elem.base_address)));
+				obj.set(Rcnts::view("dl_handle"), std::string(str, (unsigned)std::snprintf(str, sizeof(str), "0x%llx", (unsigned long long)elem.dl_handle)));
+				obj.set(Rcnts::view("base_address"), std::string(str, (unsigned)std::snprintf(str, sizeof(str), "0x%llx", (unsigned long long)elem.base_address)));
 				obj.set(Rcnts::view("real_path"), elem.real_path.get());
 				arr.push_back(STD_MOVE_IDN(obj));
 			}
@@ -337,13 +338,15 @@ namespace {
 	};
 
 	template<typename T>
-	struct Raii_singleton_runner : NONCOPYABLE {
+	struct Raii_singleton_runner {
 		Raii_singleton_runner(){
 			T::start();
 		}
 		~Raii_singleton_runner(){
 			T::stop();
 		}
+		Raii_singleton_runner(const Raii_singleton_runner &) = delete;
+		Raii_singleton_runner &operator=(const Raii_singleton_runner &) = delete;
 	};
 }
 
